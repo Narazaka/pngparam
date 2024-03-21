@@ -8,12 +8,12 @@
 #include <fstream>
 
 #define PNG_SIGNATURE_SIZE 8
-const char png_signature[PNG_SIGNATURE_SIZE] = {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
+const char png_signature[PNG_SIGNATURE_SIZE] = {(char)0x89, (char)0x50, (char)0x4E, (char)0x47, (char)0x0D, (char)0x0A, (char)0x1A, (char)0x0A};
 #define IHDR_SIZE 25
 #define CHUNK_TYPE_SIZE 4
 #define CHUNK_KEYWORD_SIZE 11
 #define CHUNK_ITXT_BEFORE_VALUE_SIZE 4
-const char chunk_itxt_before_value_signature[CHUNK_ITXT_BEFORE_VALUE_SIZE] = {0x00, 0x00, 0x00, 0x00};
+const char chunk_itxt_before_value_signature[CHUNK_ITXT_BEFORE_VALUE_SIZE] = {0, 0, 0, 0};
 #define CHUNK_CRC_SIZE 4
 
 char *get_png_parameters_exif(const char *filename)
