@@ -50,12 +50,12 @@ char *get_png_parameters(const char *filename)
         if (memcmp(chunk_type, "tEXt", CHUNK_TYPE_SIZE) == 0)
         {
             fread(chunk_keyword, sizeof(char), CHUNK_KEYWORD_SIZE, fp);
+            chunk_length -= CHUNK_KEYWORD_SIZE;
             if (memcmp(chunk_keyword, "parameters", CHUNK_KEYWORD_SIZE) == 0)
             {
-                auto value_size = chunk_length - CHUNK_KEYWORD_SIZE;
-                char *parameters = (char *)malloc(value_size + 1);
-                parameters[value_size] = '\0';
-                fread(parameters, sizeof(char), value_size, fp);
+                char *parameters = (char *)malloc(chunk_length + 1);
+                parameters[chunk_length] = '\0';
+                fread(parameters, sizeof(char), chunk_length, fp);
                 fclose(fp);
                 return parameters;
             }
@@ -63,18 +63,19 @@ char *get_png_parameters(const char *filename)
         else if (memcmp(chunk_type, "iTXt", CHUNK_TYPE_SIZE) == 0)
         {
             fread(chunk_keyword, sizeof(char), CHUNK_KEYWORD_SIZE, fp);
+            chunk_length -= CHUNK_KEYWORD_SIZE;
             if (memcmp(chunk_keyword, "parameters", CHUNK_KEYWORD_SIZE) == 0)
             {
                 fread(chunk_itxt_before_value, sizeof(char), CHUNK_ITXT_BEFORE_VALUE_SIZE, fp);
+                chunk_length -= CHUNK_ITXT_BEFORE_VALUE_SIZE;
                 if (memcmp(chunk_itxt_before_value, chunk_itxt_before_value_signature, CHUNK_ITXT_BEFORE_VALUE_SIZE) != 0)
                 {
                     fclose(fp);
                     return NULL;
                 }
-                auto value_size = chunk_length - CHUNK_KEYWORD_SIZE - CHUNK_ITXT_BEFORE_VALUE_SIZE;
-                char *parameters = (char *)malloc(value_size + 1);
-                parameters[value_size] = '\0';
-                fread(parameters, sizeof(char), value_size, fp);
+                char *parameters = (char *)malloc(chunk_length + 1);
+                parameters[chunk_length] = '\0';
+                fread(parameters, sizeof(char), chunk_length, fp);
                 fclose(fp);
                 return parameters;
             }
@@ -88,82 +89,115 @@ char *get_png_parameters(const char *filename)
     }
 }
 
-void print_png_parameters(const char *filename)
+void print_png_parameters(const char *filename, bool need_comma)
 {
     char *parameters = get_png_parameters(filename);
-    if (parameters != NULL)
-    {
-        rapidjson::Document doc;
-        doc.SetObject();
-        rapidjson::Value filename_value;
-        filename_value.SetString(rapidjson::StringRef(filename));
-        rapidjson::Value parameters_value;
-        parameters_value.SetString(rapidjson::StringRef(parameters));
-        doc.AddMember("filename", filename_value, doc.GetAllocator());
-        doc.AddMember("parameters", parameters_value, doc.GetAllocator());
-
-        char writeBuffer[65536];
-        rapidjson::FileWriteStream os(stdout, writeBuffer, sizeof(writeBuffer));
-        rapidjson::Writer<rapidjson::FileWriteStream> writer(os);
-        doc.Accept(writer);
-        printf("\n");
-        free(parameters);
+    if (parameters == NULL) {
+        return;
     }
+    if (need_comma) printf(",");
+    rapidjson::Document doc;
+    doc.SetObject();
+    rapidjson::Value filename_value;
+    filename_value.SetString(rapidjson::StringRef(filename));
+    rapidjson::Value parameters_value;
+    parameters_value.SetString(rapidjson::StringRef(parameters));
+    doc.AddMember("filename", filename_value, doc.GetAllocator());
+    doc.AddMember("parameters", parameters_value, doc.GetAllocator());
+
+    char writeBuffer[65536];
+    rapidjson::FileWriteStream os(stdout, writeBuffer, sizeof(writeBuffer));
+    rapidjson::Writer<rapidjson::FileWriteStream> writer(os);
+    doc.Accept(writer);
+    printf("\n");
+    free(parameters);
 }
 
 void print_help()
 {
-    printf("Usage: pngparam <pngfile>\n");
-    printf("Usage: pngparam -d <dir>\n");
-    printf("Usage: pngparam -r <dir recursive>\n");
+    printf("Usage: pngparam [--json] <pngfile...>\n");
+    printf("Usage: pngparam [--json] -d <dir...>\n");
+    printf("Usage: pngparam [--json] -r <recursive dir...>\n");
 }
 
 int main(int argc, char *argv[])
 {
+    int optional_offset = 0;
+    bool json_output = false;
+
     if (argc < 2)
     {
         print_help();
         return 1;
     }
 
-    if (strcmp(argv[1], "-d") == 0)
+    if (strcmp(argv[1], "--json") == 0)
     {
-        if (argc < 3)
-        {
-            print_help();
-            return 1;
-        }
-        std::filesystem::directory_iterator root(argv[2]);
-        for (const auto &entry : root)
-        {
-            if (entry.path().extension() == ".png")
-            {
-                print_png_parameters(entry.path().string().c_str());
-            }
-        }
+        optional_offset++;
+        json_output = true;
     }
-    else if (strcmp(argv[1], "-r") == 0)
+
+    if (strcmp(argv[1 + optional_offset], "-d") == 0)
     {
-        if (argc < 3)
+        if (argc < 3 + optional_offset)
         {
             print_help();
             return 1;
         }
-        std::filesystem::recursive_directory_iterator root(argv[2]);
-        for (const auto &entry : root)
+        if (json_output) printf("[\n");
+        bool first = true;
+        for (int i = 2 + optional_offset; i < argc; i++)
         {
-            if (entry.path().extension() == ".png")
+            std::filesystem::directory_iterator root(argv[i]);
+            for (const auto &entry : root)
             {
-                print_png_parameters(entry.path().string().c_str());
+                if (entry.path().extension() == ".png")
+                {
+                    print_png_parameters(reinterpret_cast<const char *>(entry.path().u8string().c_str()), json_output && !first);
+                    first = false;
+                }
             }
         }
+        if (json_output) printf("]\n");
+    }
+    else if (strcmp(argv[1 + optional_offset], "-r") == 0)
+    {
+        if (argc < 3 + optional_offset)
+        {
+            print_help();
+            return 1;
+        }
+        if (json_output) printf("[\n");
+        bool first = true;
+        for (int i = 2 + optional_offset; i < argc; i++)
+        {
+            std::filesystem::recursive_directory_iterator root(argv[i]);
+            for (const auto &entry : root)
+            {
+                if (entry.path().extension() == ".png")
+                {
+                    print_png_parameters(reinterpret_cast<const char *>(entry.path().u8string().c_str()), json_output && !first);
+                    first = false;
+                }
+            }
+        }
+        if (json_output) printf("]\n");
     }
     else
     {
-        for (int i = 1; i < argc; i++)
+        if (argc < 2 + optional_offset)
         {
-            print_png_parameters(argv[i]);
+            print_help();
+            return 1;
         }
+        if (json_output) printf("[\n");
+        bool first = true;
+        for (int i = 1 + optional_offset; i < argc; i++)
+        {
+            print_png_parameters(argv[i], json_output && !first);
+            first = false;
+        }
+        if (json_output) printf("]\n");
     }
     return 0;
 }
