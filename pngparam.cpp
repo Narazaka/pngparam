@@ -16,7 +16,7 @@ const char png_signature[PNG_SIGNATURE_SIZE] = {(char)0x89, (char)0x50, (char)0x
 const char chunk_itxt_before_value_signature[CHUNK_ITXT_BEFORE_VALUE_SIZE] = {0, 0, 0, 0};
 #define CHUNK_CRC_SIZE 4
 
-char *get_png_parameters_exif(const char *filename)
+char *get_png_parameters(const char *filename)
 {
     FILE *fp = fopen(filename, "rb");
     if (fp == NULL)
@@ -90,15 +90,15 @@ char *get_png_parameters_exif(const char *filename)
 
 void print_png_parameters_exif(const char *filename)
 {
-    char *exif_buf = get_png_parameters_exif(filename);
-    if (exif_buf != NULL)
+    char *parameters = get_png_parameters(filename);
+    if (parameters != NULL)
     {
         rapidjson::Document doc;
         doc.SetObject();
         rapidjson::Value filename_value;
         filename_value.SetString(rapidjson::StringRef(filename));
         rapidjson::Value parameters_value;
-        parameters_value.SetString(rapidjson::StringRef(exif_buf));
+        parameters_value.SetString(rapidjson::StringRef(parameters));
         doc.AddMember("filename", filename_value, doc.GetAllocator());
         doc.AddMember("parameters", parameters_value, doc.GetAllocator());
 
@@ -107,7 +107,7 @@ void print_png_parameters_exif(const char *filename)
         rapidjson::Writer<rapidjson::FileWriteStream> writer(os);
         doc.Accept(writer);
         printf("\n");
-        free(exif_buf);
+        free(parameters);
     }
 }
 
