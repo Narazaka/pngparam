@@ -7,4 +7,5 @@ endif()
 
 project(pngparam CXX)
 add_executable(pngparam pngparam.cpp)
+target_include_directories(pngparam PUBLIC ./rapidjson/include)
 target_compile_features(pngparam PUBLIC cxx_std_23)

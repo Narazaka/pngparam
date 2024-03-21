@@ -3,9 +3,9 @@
 #include <bit>
 #include <filesystem>
 #include <cstring>
-#include <string>
-#include <iostream>
-#include <fstream>
+#include <rapidjson/document.h>
+#include <rapidjson/filewritestream.h>
+#include <rapidjson/writer.h>
 
 #define PNG_SIGNATURE_SIZE 8
 const char png_signature[PNG_SIGNATURE_SIZE] = {(char)0x89, (char)0x50, (char)0x4E, (char)0x47, (char)0x0D, (char)0x0A, (char)0x1A, (char)0x0A};
@@ -93,8 +93,20 @@ void print_png_parameters_exif(const char *filename)
     char *exif_buf = get_png_parameters_exif(filename);
     if (exif_buf != NULL)
     {
-        printf("> %s\n", filename);
-        printf("%s\n", exif_buf);
+        rapidjson::Document doc;
+        doc.SetObject();
+        rapidjson::Value filename_value;
+        filename_value.SetString(rapidjson::StringRef(filename));
+        rapidjson::Value parameters_value;
+        parameters_value.SetString(rapidjson::StringRef(exif_buf));
+        doc.AddMember("filename", filename_value, doc.GetAllocator());
+        doc.AddMember("parameters", parameters_value, doc.GetAllocator());
+
+        char writeBuffer[65536];
+        rapidjson::FileWriteStream os(stdout, writeBuffer, sizeof(writeBuffer));
+        rapidjson::Writer<rapidjson::FileWriteStream> writer(os);
+        doc.Accept(writer);
+        printf("\n");
         free(exif_buf);
     }
 }
