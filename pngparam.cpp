@@ -53,11 +53,11 @@ char *get_png_parameters(const char *filename)
             if (memcmp(chunk_keyword, "parameters", CHUNK_KEYWORD_SIZE) == 0)
             {
                 auto value_size = chunk_length - CHUNK_KEYWORD_SIZE;
-                char *exif_buf = (char *)malloc(value_size + 1);
-                exif_buf[value_size] = '\0';
-                fread(exif_buf, sizeof(char), value_size, fp);
+                char *parameters = (char *)malloc(value_size + 1);
+                parameters[value_size] = '\0';
+                fread(parameters, sizeof(char), value_size, fp);
                 fclose(fp);
-                return exif_buf;
+                return parameters;
             }
         }
         else if (memcmp(chunk_type, "iTXt", CHUNK_TYPE_SIZE) == 0)
@@ -72,11 +72,11 @@ char *get_png_parameters(const char *filename)
                     return NULL;
                 }
                 auto value_size = chunk_length - CHUNK_KEYWORD_SIZE - CHUNK_ITXT_BEFORE_VALUE_SIZE;
-                char *exif_buf = (char *)malloc(value_size + 1);
-                exif_buf[value_size] = '\0';
-                fread(exif_buf, sizeof(char), value_size, fp);
+                char *parameters = (char *)malloc(value_size + 1);
+                parameters[value_size] = '\0';
+                fread(parameters, sizeof(char), value_size, fp);
                 fclose(fp);
-                return exif_buf;
+                return parameters;
             }
         }
         else if (memcmp(chunk_type, "IEND", CHUNK_TYPE_SIZE) == 0)
@@ -88,7 +88,7 @@ char *get_png_parameters(const char *filename)
     }
 }
 
-void print_png_parameters_exif(const char *filename)
+void print_png_parameters(const char *filename)
 {
     char *parameters = get_png_parameters(filename);
     if (parameters != NULL)
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
         {
             if (entry.path().extension() == ".png")
             {
-                print_png_parameters_exif(entry.path().string().c_str());
+                print_png_parameters(entry.path().string().c_str());
             }
         }
     }
@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
         {
             if (entry.path().extension() == ".png")
             {
-                print_png_parameters_exif(entry.path().string().c_str());
+                print_png_parameters(entry.path().string().c_str());
             }
         }
     }
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
     {
         for (int i = 1; i < argc; i++)
         {
-            print_png_parameters_exif(argv[i]);
+            print_png_parameters(argv[i]);
         }
     }
     return 0;
