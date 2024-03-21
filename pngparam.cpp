@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
             return 1;
         }
         if (json_output) printf("[\n");
-        bool first = true;
+        bool need_comma = false;
         for (int i = 2 + optional_offset; i < argc; i++)
         {
             std::filesystem::directory_iterator root(argv[i]);
@@ -153,8 +153,8 @@ int main(int argc, char *argv[])
             {
                 if (entry.path().extension() == ".png")
                 {
-                    print_png_parameters(reinterpret_cast<const char *>(entry.path().u8string().c_str()), json_output && !first);
-                    first = false;
+                    print_png_parameters(reinterpret_cast<const char *>(entry.path().u8string().c_str()), need_comma);
+                    need_comma = json_output;
                 }
             }
         }
@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
             return 1;
         }
         if (json_output) printf("[\n");
-        bool first = true;
+        bool need_comma = false;
         for (int i = 2 + optional_offset; i < argc; i++)
         {
             std::filesystem::recursive_directory_iterator root(argv[i]);
@@ -176,8 +176,8 @@ int main(int argc, char *argv[])
             {
                 if (entry.path().extension() == ".png")
                 {
-                    print_png_parameters(reinterpret_cast<const char *>(entry.path().u8string().c_str()), json_output && !first);
-                    first = false;
+                    print_png_parameters(reinterpret_cast<const char *>(entry.path().u8string().c_str()), need_comma);
+                    need_comma = json_output;
                 }
             }
         }
@@ -191,11 +191,11 @@ int main(int argc, char *argv[])
             return 1;
         }
         if (json_output) printf("[\n");
-        bool first = true;
+        bool need_comma = false;
         for (int i = 1 + optional_offset; i < argc; i++)
         {
-            print_png_parameters(argv[i], json_output && !first);
-            first = false;
+            print_png_parameters(argv[i], need_comma);
+            need_comma = json_output;
         }
         if (json_output) printf("]\n");
     }
